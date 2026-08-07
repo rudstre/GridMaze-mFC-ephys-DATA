@@ -122,7 +122,7 @@ bash download_data.sh --help
 - 🔁 **Resumable.** If the download is interrupted, just re-run the same command — `curl -C -` picks up where it left off.
 - 🔐 **Verified.** MD5 checksums are fetched live from Zenodo's API and compared after each download. Pass `--no-verify` to skip.
 - 🧰 **Requirements:** `curl`, `unzip`, `python3`, and either `md5sum` (Linux) or `md5` (macOS).
-- 🗂️ **Custom paths.** If you point `--data-dir` somewhere other than `<repo-root>/data`, the loader code will still find it as long as you symlink — e.g. `ln -s /scratch/gridmaze/data data` from the repo root. Otherwise edit `code/GridMaze/core/get_sessions.py` to point at your chosen location.
+- 🗂️ **Custom paths.** The loader uses `<repo-root>/data` by default. If `--data-dir` points elsewhere, pass that directory as `data_root` when loading sessions; no symlink or source edit is required.
 
 ### Option 2 — `curl` one-liner
 
@@ -150,6 +150,7 @@ The notebooks and loader package depend on a small set of standard scientific-Py
 ```bash
 conda env create -f code/environment.yml
 conda activate GridMaze_mFC_ephys
+PYTHONPATH=code pytest -q code/tests
 ```
 
 Tested on Linux; should also resolve on macOS / Windows.
@@ -206,13 +207,36 @@ processed_data/m2/
 
 Full per-field tour: [`code/processed_data_intro.ipynb`](code/processed_data_intro.ipynb). End-to-end worked example: [`code/example_analysis.ipynb`](code/example_analysis.ipynb).
 
+### Loading sessions
+
+Session lookup is metadata-only by default. Name only the data products needed for an analysis; each known product is always a discoverable attribute and is `None` until loaded.
+
+```python
+from GridMaze.core.get_sessions import get_maze_session, get_maze_sessions
+
+session = get_maze_session(
+    subject_ID="m2",
+    maze_name="maze_1",
+    day_on_maze=10,
+    with_data=["trials_df", "trajectories_df"],
+)
+
+# More products can be loaded later.
+session.load_data(["trial_info_df"])
+
+# Plural lookup always returns a list, including when zero or one session matches.
+sessions = get_maze_sessions(maze_names=["maze_1"], days_on_maze="late")
+```
+
+Both functions accept `data_root=Path("/scratch/gridmaze/data")` when the data lives outside this repository. Imports and default paths do not depend on the process working directory.
+
 
 ## 📓 Tutorials
 
 Three short notebooks live in [`code/`](code/) to get you up and running:
 
 - [`maze_intro.ipynb`](code/maze_intro.ipynb) — build and inspect the three `networkx` maze views (`simple_maze`, `extended_simple_maze`, `skeleton_maze`) from `maze_configs.json`.
-- [`processed_data_intro.ipynb`](code/processed_data_intro.ipynb) — load a session with `get_maze_sessions(...)` and tour each per-session file: `trials_df`, `events_df`, spikes, cluster metrics, raw tracking, QC'd trajectories, per-frame trial info, LFP, and `session_info`.
+- [`processed_data_intro.ipynb`](code/processed_data_intro.ipynb) — load a session with `get_maze_session(...)` and tour each per-session file: `trials_df`, `events_df`, spikes, cluster metrics, raw tracking, QC'd trajectories, per-frame trial info, LFP, and `session_info`.
 - [`example_analysis.ipynb`](code/example_analysis.ipynb) — worked example: frame-aligned firing rates, per-location summaries, single-cell visualisation, aggregation across sessions, and a low-dimensional spatial basis.
 
 

@@ -9,24 +9,15 @@ Every node / edge carries 'position' (cartesian, metres) and 'label' (alphanumer
 """
 
 # %% Imports
-import json
-import numpy as np
 import networkx as nx
-from pathlib import Path
+import numpy as np
 
-# %% Paths [CHANGE IF YOU DOWNLOADED THE DATA SOMEWHERE ELSE]
+# %% Physical maze geometry (meters)
 
-EXPERIMENT_INFO_PATH = Path("../data/experiment_info")
-
-# %% Global variables
-
-with open(EXPERIMENT_INFO_PATH / "maze_measurements.json") as input_file:
-    MAZE_MEASURMENTS = json.load(input_file)
-
-MAZE_NODE_DIMENSIONS = MAZE_MEASURMENTS["maze_node_dimensions"]
-LOWER_LEFT = MAZE_MEASURMENTS["lower_left_node_cartesian_center"]  # meters
-DISTNACE_BETWEEN_TOWERS = MAZE_MEASURMENTS["distance_between_node_centers"]  # meters
-TOWER_WIDTH = MAZE_MEASURMENTS["tower_width"]  # meters
+MAZE_NODE_DIMENSIONS = (7, 7)
+LOWER_LEFT_NODE_CARTESIAN_CENTER = (0.15, 0.15)
+DISTANCE_BETWEEN_TOWERS = 0.18
+TOWER_WIDTH = 0.11
 
 # %% Extended simple maze
 
@@ -67,7 +58,7 @@ def simple_maze(edges):
     maze = nx.Graph()
     maze.add_nodes_from(nx.grid_2d_graph(*MAZE_NODE_DIMENSIONS).nodes())
     edge_coords = get_edge_coords(edges)
-    maze.add_weighted_edges_from([i + (DISTNACE_BETWEEN_TOWERS,) for i in edge_coords])
+    maze.add_weighted_edges_from([i + (DISTANCE_BETWEEN_TOWERS,) for i in edge_coords])
     nx.set_node_attributes(maze, _get_node_positions_dict(), "position")
     nx.set_node_attributes(maze, {v: k for k, v in get_simple_nodes_dict().items()}, "label")
     nx.set_edge_attributes(maze, {key: _get_center_edge_positions_dict()[key] for key in edge_coords}, "position")
@@ -153,8 +144,8 @@ def _get_node_positions_dict():
     discrete_nodes2cartesian_nodes = {}
     node_discrete_coords = nodes_dict.values()
     for discrete_x, discrete_y in node_discrete_coords:
-        cartesian_x = discrete_x * DISTNACE_BETWEEN_TOWERS + LOWER_LEFT[0]
-        cartesian_y = discrete_y * DISTNACE_BETWEEN_TOWERS + LOWER_LEFT[1]
+        cartesian_x = discrete_x * DISTANCE_BETWEEN_TOWERS + LOWER_LEFT_NODE_CARTESIAN_CENTER[0]
+        cartesian_y = discrete_y * DISTANCE_BETWEEN_TOWERS + LOWER_LEFT_NODE_CARTESIAN_CENTER[1]
         discrete_nodes2cartesian_nodes[(discrete_x, discrete_y)] = (cartesian_x, cartesian_y)
     return discrete_nodes2cartesian_nodes
 
@@ -341,7 +332,7 @@ def _get_skeleton_bridge_positions_dict():
     vertical bridges. North, south, east and west bridge nodes lie on the edge of the octagonal towers, and the middle bridge nodes lie
     half way between the center of adjacent towers."""
     skeleton_bridge_positions = {}
-    bridge_node_spacing = DISTNACE_BETWEEN_TOWERS / 2 - tower_apothem()
+    bridge_node_spacing = DISTANCE_BETWEEN_TOWERS / 2 - tower_apothem()
     all_edges = nx.grid_2d_graph(*MAZE_NODE_DIMENSIONS).edges()
     horizontal_edges, vertical_edges = _split_edges_into_horizontal_vertical(all_edges)
     edge2position = _get_center_edge_positions_dict()
@@ -371,7 +362,7 @@ def _get_skeleton_edge_distances_dict():
     # define different distances between skeleton nodes
     apothem = tower_apothem()
     tower_center_edge_distance = apothem
-    bridge_bridge_distance = DISTNACE_BETWEEN_TOWERS / 2 - apothem
+    bridge_bridge_distance = DISTANCE_BETWEEN_TOWERS / 2 - apothem
     tower_outer_edge_distance = apothem * np.sqrt(2)
     tower_to_edge_distance = apothem * np.sqrt(2 - np.sqrt(2))  # using cosine rule
     # attribute distances to edges

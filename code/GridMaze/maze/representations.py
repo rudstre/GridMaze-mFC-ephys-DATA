@@ -1,11 +1,14 @@
 """
-Build networkx representations of a GridMaze maze from a list of edge strings (e.g. "A1-A2"):
+Build networkx representations of a GridMaze maze from a list of edge strings (e.g.
+"A1-A2"):
 
     - simple_maze              -- towers as nodes, bridges as edges
     - get_extended_simple_maze -- towers AND bridges as nodes (line-graph view)
-    - skeleton_maze            -- 5 nodes per tower, 3 nodes per bridge (sub-tower resolution)
+    - skeleton_maze            -- 5 nodes per tower, 3 nodes per bridge (sub-tower
+    resolution)
 
-Every node / edge carries 'position' (cartesian, metres) and 'label' (alphanumeric) attributes.
+Every node / edge carries 'position' (cartesian, metres) and 'label' (alphanumeric)
+attributes.
 """
 
 # %% Imports
@@ -23,7 +26,8 @@ TOWER_WIDTH = 0.11
 
 
 def get_extended_simple_maze(simple_maze):
-    """networkx graph: towers AND bridges as nodes (line-graph view of `simple_maze`)."""
+    """networkx graph: towers AND bridges as nodes (line-graph view of
+    `simple_maze`)."""
     edge_graph = nx.line_graph(simple_maze)
     extended_simple_maze = nx.Graph()
     extended_node2position = {
@@ -41,7 +45,10 @@ def get_extended_simple_maze(simple_maze):
     for edge_node in edge_graph:
         extended_simple_maze.add_edge(edge_node[0], edge_node)
         extended_simple_maze.add_edge(edge_node, edge_node[1])
-    extended_edge2label = {edge: tuple([extended_node2label[p] for p in edge]) for edge in extended_simple_maze.edges()}
+    extended_edge2label = {
+        edge: tuple([extended_node2label[p] for p in edge])
+        for edge in extended_simple_maze.edges()
+    }
     nx.set_edge_attributes(extended_simple_maze, extended_edge2label, "label")
     return extended_simple_maze
 
@@ -51,7 +58,8 @@ def get_extended_simple_maze(simple_maze):
 
 def simple_maze(edges):
     """
-    Creates a networkx graph representation of a maze, where nodes are towers, and edges are walkways
+    Creates a networkx graph representation of a maze, where nodes are towers, and edges
+    are walkways
     Input: edges (list of str): list of edges in the maze, in the format 'A1-A2'
     Output: maze (networkx graph): graph representation of the maze
     """
@@ -60,27 +68,43 @@ def simple_maze(edges):
     edge_coords = get_edge_coords(edges)
     maze.add_weighted_edges_from([i + (DISTANCE_BETWEEN_TOWERS,) for i in edge_coords])
     nx.set_node_attributes(maze, _get_node_positions_dict(), "position")
-    nx.set_node_attributes(maze, {v: k for k, v in get_simple_nodes_dict().items()}, "label")
-    nx.set_edge_attributes(maze, {key: _get_center_edge_positions_dict()[key] for key in edge_coords}, "position")
-    nx.set_edge_attributes(maze, {key: get_edge_coords2label_dict()[key] for key in edge_coords}, "label")
+    nx.set_node_attributes(
+        maze, {v: k for k, v in get_simple_nodes_dict().items()}, "label"
+    )
+    nx.set_edge_attributes(
+        maze,
+        {key: _get_center_edge_positions_dict()[key] for key in edge_coords},
+        "position",
+    )
+    nx.set_edge_attributes(
+        maze, {key: get_edge_coords2label_dict()[key] for key in edge_coords}, "label"
+    )
     return maze
 
 
 def skeleton_maze(edges):
     """
-    Creates a networkx graph representation of a maze, where towers are discritsed into 5 nodes, and walkways are
+    Creates a networkx graph representation of a maze, where towers are discritsed into
+    5 nodes, and walkways are
     discrised into 3 nodes
     Input: edges (list of str): list of edges in the maze, in the format 'A1-A2'
     Output: maze (networkx graph): graph representation of the maze
     Notes:
-        - Tower nodes are represented by their discrete coordinates on the simple maze with an additional dimension
-        representing their place in the tower: eg, (0,0,0) is the center node in the tower at (0,0). Explicitly:
-        (.,.,0) = 'center', (.,.,1) = 'top-left', (.,.,2) = 'top-right', (.,.,3) = 'bottom-left',
+        - Tower nodes are represented by their discrete coordinates on the simple maze
+        with an additional dimension
+        representing their place in the tower: eg, (0,0,0) is the center node in the
+        tower at (0,0). Explicitly:
+        (.,.,0) = 'center', (.,.,1) = 'top-left', (.,.,2) = 'top-right', (.,.,3) =
+        'bottom-left',
         (.,.,4) = 'bottom-right'
-        - Edge nodes are represented by their discrete edge coordinates on the simple maze with an additional dimension
-        representing their place between adjacent nodes, this is separate for horizontal and vertical edges:
-        - Horizontal edges: ((.,.),(.,.),0) = 'west', ((.,.),(.,.),1) = 'middle', (.,.),(.,.),2) = 'east'
-        - Vertical edges: ((.,.),(.,.),0) = 'south', ((.,.),(.,.),1) = 'middle', (.,.),(.,.),2) = 'north'
+        - Edge nodes are represented by their discrete edge coordinates on the simple
+        maze with an additional dimension
+        representing their place between adjacent nodes, this is separate for horizontal
+        and vertical edges:
+        - Horizontal edges: ((.,.),(.,.),0) = 'west', ((.,.),(.,.),1) = 'middle',
+        (.,.),(.,.),2) = 'east'
+        - Vertical edges: ((.,.),(.,.),0) = 'south', ((.,.),(.,.),1) = 'middle',
+        (.,.),(.,.),2) = 'north'
         - Positions (x,y: cartesian coordinates) and labels are attributed to each node
     """
     skeleton_maze = nx.Graph()
@@ -90,9 +114,15 @@ def skeleton_maze(edges):
     skeleton_maze_weighted_edges = _get_skeleton_maze_weighted_edges(edges)
     skeleton_maze.add_weighted_edges_from(skeleton_maze_weighted_edges)
     skeleton_node2position = {
-        k: v for k, v in get_skeleton_maze_node_positions_dict().items() if k in skeleton_maze_nodes
+        k: v
+        for k, v in get_skeleton_maze_node_positions_dict().items()
+        if k in skeleton_maze_nodes
     }
-    skeleton_node2label = {k: v for k, v in get_skeleton_maze_node_labels_dict().items() if k in skeleton_maze_nodes}
+    skeleton_node2label = {
+        k: v
+        for k, v in get_skeleton_maze_node_labels_dict().items()
+        if k in skeleton_maze_nodes
+    }
     nx.set_node_attributes(skeleton_maze, skeleton_node2position, "position")
     nx.set_node_attributes(skeleton_maze, skeleton_node2label, "label")
     return skeleton_maze
@@ -107,19 +137,21 @@ def _get_letter_codes(n):
 
 
 def get_simple_nodes_dict():
-    """Returns a dictionary of alphanumeric nodes ('A1') to simple maze node coordinates (0,0)"""
+    """Returns a dictionary of alphanumeric nodes ('A1') to simple maze node coordinates
+    (0,0)"""
     nodes_letter2coord = {}
     letter_codes = _get_letter_codes(MAZE_NODE_DIMENSIONS[1])
-    for i, l in enumerate(letter_codes):
+    for i, letter in enumerate(letter_codes):
         for j in np.arange(0, MAZE_NODE_DIMENSIONS[0]):
-            letter_node = l + str(j + 1)
+            letter_node = letter + str(j + 1)
             coord_node = (i, j)
             nodes_letter2coord[letter_node] = coord_node
     return nodes_letter2coord
 
 
 def get_edge_coords(edges):
-    """converts a list of alphanumeric edges ('A1-A2') to simple maze coordinates ((0,0),(0,1))"""
+    """converts a list of alphanumeric edges ('A1-A2') to simple maze coordinates
+    ((0,0),(0,1))"""
     nodes_dict = get_simple_nodes_dict()
     edges_letter_tuple = [edge.split("-") for edge in edges]
     edge_coords = []
@@ -129,29 +161,41 @@ def get_edge_coords(edges):
 
 
 def get_edge_coords2label_dict():
-    """Returns a dictionary of edge coordinates ((0,0),(0,1)) to alphanumeric edge labels ('A1-A2')"""
+    """Returns a dictionary of edge coordinates ((0,0),(0,1)) to alphanumeric edge
+    labels ('A1-A2')"""
     all_edges = nx.grid_2d_graph(*MAZE_NODE_DIMENSIONS).edges()
     node_coord2label = {v: k for k, v in get_simple_nodes_dict().items()}
     edge_coords2label = {}
     for edge in all_edges:
-        edge_coords2label[edge] = node_coord2label[edge[0]] + "-" + node_coord2label[edge[1]]
+        edge_coords2label[edge] = (
+            node_coord2label[edge[0]] + "-" + node_coord2label[edge[1]]
+        )
     return edge_coords2label
 
 
 def _get_node_positions_dict():
-    """Returns a dictionary of node positions to cartesian coordinates, defined as center of maze tower"""
+    """Returns a dictionary of node positions to cartesian coordinates, defined as
+    center of maze tower"""
     nodes_dict = get_simple_nodes_dict()
     discrete_nodes2cartesian_nodes = {}
     node_discrete_coords = nodes_dict.values()
     for discrete_x, discrete_y in node_discrete_coords:
-        cartesian_x = discrete_x * DISTANCE_BETWEEN_TOWERS + LOWER_LEFT_NODE_CARTESIAN_CENTER[0]
-        cartesian_y = discrete_y * DISTANCE_BETWEEN_TOWERS + LOWER_LEFT_NODE_CARTESIAN_CENTER[1]
-        discrete_nodes2cartesian_nodes[(discrete_x, discrete_y)] = (cartesian_x, cartesian_y)
+        cartesian_x = (
+            discrete_x * DISTANCE_BETWEEN_TOWERS + LOWER_LEFT_NODE_CARTESIAN_CENTER[0]
+        )
+        cartesian_y = (
+            discrete_y * DISTANCE_BETWEEN_TOWERS + LOWER_LEFT_NODE_CARTESIAN_CENTER[1]
+        )
+        discrete_nodes2cartesian_nodes[(discrete_x, discrete_y)] = (
+            cartesian_x,
+            cartesian_y,
+        )
     return discrete_nodes2cartesian_nodes
 
 
 def _split_edges_into_horizontal_vertical(edges):
-    """Splits a list of edge coors into horizontal and vertical edges (separate list outputs as tuple)"""
+    """Splits a list of edge coors into horizontal and vertical edges (separate list
+    outputs as tuple)"""
     horizontal_edges = []
     vertical_edges = []
     for edge in edges:
@@ -193,10 +237,13 @@ def _get_center_edge_positions_dict():
 
 def _get_skeleton_tower_nodes():
     """
-    Returns a list of nodes for the skeleton maze that define a maze tower and cover the same space as a single node
+    Returns a list of nodes for the skeleton maze that define a maze tower and cover the
+    same space as a single node
     in the simple maze.
-        - Coordinates are defined similar to the simple maze, but with an additional z coordinate to represent relative position
-          from the center of the tower: (.,.,0) = 'center', (.,.,1) = 'top-left', (.,.,2) = 'top-right', (.,.,3) = 'bottom-left',
+        - Coordinates are defined similar to the simple maze, but with an additional z
+        coordinate to represent relative position
+          from the center of the tower: (.,.,0) = 'center', (.,.,1) = 'top-left',
+          (.,.,2) = 'top-right', (.,.,3) = 'bottom-left',
           (.,.,4) = 'bottom-right'
     """
     skeleton_tower_nodes = []
@@ -210,11 +257,16 @@ def _get_skeleton_tower_nodes():
 
 def _get_skeleton_bridge_nodes(edges):
     """
-    Returns a list of nodes for the skeleton maze that define a maze bridge and cover the same space as a single edge in the
-    simple maze. Coordinates are defined similar to the simple maze, but with an additional z coordinate to represent relative
-    position from the center of the bridge, separately for horizontal and vertical bridges:
-        - Horizontal edges: ((.,.),(.,.),0) = 'west', ((.,.),(.,.),1) = 'middle', (.,.),(.,.),2) = 'east'
-        - Vertical edges: ((.,.),(.,.),0) = 'south', ((.,.),(.,.),1) = 'middle', (.,.),(.,.),2) = 'north'
+    Returns a list of nodes for the skeleton maze that define a maze bridge and cover
+    the same space as a single edge in the
+    simple maze. Coordinates are defined similar to the simple maze, but with an
+    additional z coordinate to represent relative
+    position from the center of the bridge, separately for horizontal and vertical
+    bridges:
+        - Horizontal edges: ((.,.),(.,.),0) = 'west', ((.,.),(.,.),1) = 'middle',
+        (.,.),(.,.),2) = 'east'
+        - Vertical edges: ((.,.),(.,.),0) = 'south', ((.,.),(.,.),1) = 'middle',
+        (.,.),(.,.),2) = 'north'
     """
     skeleton_bridge_nodes = []
     for edge in edges:
@@ -234,8 +286,10 @@ def get_skeleton_maze_nodes(edges):
 
 
 def _get_skeleton_tower_edges():
-    """Makes a list of edges on the nodes in the tower postions on the skeleton maze. In a tower, the center node is connected
-    to the outer nodes in a diagonal pattern, and the outer nodes are connected to each other in a square pattern."""
+    """Makes a list of edges on the nodes in the tower postions on the skeleton maze. In
+    a tower, the center node is connected
+    to the outer nodes in a diagonal pattern, and the outer nodes are connected to each
+    other in a square pattern."""
     simple_maze_nodes = nx.grid_2d_graph(*MAZE_NODE_DIMENSIONS).nodes()
     skeleton_tower_edges = []
     for node in simple_maze_nodes:
@@ -254,10 +308,14 @@ def _get_skeleton_tower_edges():
 
 
 def _get_skeleton_bridge_edges(edges):
-    """Makes a list of edges on the nodes in the bridge postions on the skeleton maze, defined differently for horizontal and
-    vertical bridges. Horizontal node 0s are connected on the the 2nd and 4th nodes of towers to the west and horizontal node
-    2s are connected to the 1st and 3rd towers to the east. The middle horixontal node (1) is connected to horizontal nodes 0
-    and 2. The same logical applies for connections that make up vertical edges on the maze."""
+    """Makes a list of edges on the nodes in the bridge postions on the skeleton maze,
+    defined differently for horizontal and
+    vertical bridges. Horizontal node 0s are connected on the the 2nd and 4th nodes of
+    towers to the west and horizontal node
+    2s are connected to the 1st and 3rd towers to the east. The middle horixontal node
+    (1) is connected to horizontal nodes 0
+    and 2. The same logical applies for connections that make up vertical edges on the
+    maze."""
     skeleton_bridge_edges = []
     horizontal_edges, vertical_edges = _split_edges_into_horizontal_vertical(edges)
     bridge_edges = []
@@ -311,25 +369,43 @@ def tower_apothem():
 
 
 def _get_skeleton_tower_positions_dict():
-    """Makes a dictionary of the positions of the nodes in the tower postions on the skeleton maze. In a tower, the center node
-    lies at the center of the tower, and the outer nodes lie on the corners of a square inscribed with the the octagonal towers.
+    """Makes a dictionary of the positions of the nodes in the tower postions on the
+    skeleton maze. In a tower, the center node
+    lies at the center of the tower, and the outer nodes lie on the corners of a square
+    inscribed with the the octagonal towers.
     """
-    apothem = tower_apothem()  # define distance beween center and outer tower nodes as apothem
+    apothem = (
+        tower_apothem()
+    )  # define distance beween center and outer tower nodes as apothem
     skeleton_tower_positions = {}
     tower2position = _get_node_positions_dict()
     for node in tower2position.keys():
         x, y = tower2position[node]
         skeleton_tower_positions[node + (0,)] = (x, y)
-        skeleton_tower_positions[node + (1,)] = ((x - apothem / np.sqrt(2)), y + apothem / np.sqrt(2))
-        skeleton_tower_positions[node + (2,)] = ((x + apothem / np.sqrt(2)), y + apothem / np.sqrt(2))
-        skeleton_tower_positions[node + (3,)] = ((x - apothem / np.sqrt(2)), y - apothem / np.sqrt(2))
-        skeleton_tower_positions[node + (4,)] = ((x + apothem / np.sqrt(2)), y - apothem / np.sqrt(2))
+        skeleton_tower_positions[node + (1,)] = (
+            (x - apothem / np.sqrt(2)),
+            y + apothem / np.sqrt(2),
+        )
+        skeleton_tower_positions[node + (2,)] = (
+            (x + apothem / np.sqrt(2)),
+            y + apothem / np.sqrt(2),
+        )
+        skeleton_tower_positions[node + (3,)] = (
+            (x - apothem / np.sqrt(2)),
+            y - apothem / np.sqrt(2),
+        )
+        skeleton_tower_positions[node + (4,)] = (
+            (x + apothem / np.sqrt(2)),
+            y - apothem / np.sqrt(2),
+        )
     return skeleton_tower_positions
 
 
 def _get_skeleton_bridge_positions_dict():
-    """Makes a dictionary of the positions of the nodes in the bridge postions on the skeleton maze, defined differently for horizontal and
-    vertical bridges. North, south, east and west bridge nodes lie on the edge of the octagonal towers, and the middle bridge nodes lie
+    """Makes a dictionary of the positions of the nodes in the bridge postions on the
+    skeleton maze, defined differently for horizontal and
+    vertical bridges. North, south, east and west bridge nodes lie on the edge of the
+    octagonal towers, and the middle bridge nodes lie
     half way between the center of adjacent towers."""
     skeleton_bridge_positions = {}
     bridge_node_spacing = DISTANCE_BETWEEN_TOWERS / 2 - tower_apothem()
@@ -371,7 +447,9 @@ def _get_skeleton_edge_distances_dict():
     skeleton_edge_distances = {}
     for edge in skeleton_maze_edges:
         node1, node2 = edge
-        if isinstance(node1[0], int) and isinstance(node2[0], int):  # defines tower edges
+        if isinstance(node1[0], int) and isinstance(
+            node2[0], int
+        ):  # defines tower edges
             if node1[-1] == 0 or node2[-1] == 0:  # define inner tower edge
                 skeleton_edge_distances[edge] = tower_center_edge_distance
             else:  # define outer tower edge
@@ -385,7 +463,9 @@ def _get_skeleton_edge_distances_dict():
                 skeleton_edge_distances[edge] = tower_center_edge_distance
             else:
                 skeleton_edge_distances[edge] = tower_to_edge_distance
-        elif isinstance(node1[0], tuple) and isinstance(node2[0], tuple):  # define bridge edges
+        elif isinstance(node1[0], tuple) and isinstance(
+            node2[0], tuple
+        ):  # define bridge edges
             skeleton_edge_distances[edge] = bridge_bridge_distance
     return skeleton_edge_distances
 
@@ -401,8 +481,10 @@ def _get_skeleton_maze_weighted_edges(edges):
 
 
 def _get_skeleton_maze_tower_labels_dict():
-    """Makes a dictionary of the labels of the nodes in the skeleton maze. The labels are the alphaneumeric code of the base node ('A1'),
-    followed by the subpoint label; either: 'center: C', 'north-west: NW', 'north-east: NE', 'south-west: SW' or 'south-east: SE'.
+    """Makes a dictionary of the labels of the nodes in the skeleton maze. The labels
+    are the alphaneumeric code of the base node ('A1'),
+    followed by the subpoint label; either: 'center: C', 'north-west: NW', 'north-east:
+    NE', 'south-west: SW' or 'south-east: SE'.
     """
     tower_node2label = {}
     node_subplot2label = {0: "C", 1: "NW", 2: "NE", 3: "SW", 4: "SE"}
@@ -415,33 +497,44 @@ def _get_skeleton_maze_tower_labels_dict():
 
 
 def _get_skeleton_maze_bridge_labels_dict():
-    """Makes a dictionary of the labels of the nodes in the skeleton maze. The labels are the alphaneumeric code of the base edge('A1-A2'),
-    followed by the subpoint label; either: 'west: W', 'center: C' or 'east:E' for horizontal edges, or 'south: S', 'center: C' or 'north: N' for vertical edges.
+    """Makes a dictionary of the labels of the nodes in the skeleton maze. The labels
+    are the alphaneumeric code of the base edge('A1-A2'),
+    followed by the subpoint label; either: 'west: W', 'center: C' or 'east:E' for
+    horizontal edges, or 'south: S', 'center: C' or 'north: N' for vertical edges.
     """
     bridge_node2label = {}
     horizontal_node_subplot2letter = {0: "W", 1: "C", 2: "E"}
     vertical_node_subplot2letter = {0: "S", 1: "C", 2: "N"}
     simple_node2alphaneumeric = {v: k for k, v in get_simple_nodes_dict().items()}
-    all_skeleton_bridge_nodes = _get_skeleton_bridge_nodes(nx.grid_2d_graph(*MAZE_NODE_DIMENSIONS).edges())
-    horizontal_skeleton_nodes, vertical_skeleton_nodes = _split_edges_into_horizontal_vertical(
-        all_skeleton_bridge_nodes
+    all_skeleton_bridge_nodes = _get_skeleton_bridge_nodes(
+        nx.grid_2d_graph(*MAZE_NODE_DIMENSIONS).edges()
+    )
+    horizontal_skeleton_nodes, vertical_skeleton_nodes = (
+        _split_edges_into_horizontal_vertical(all_skeleton_bridge_nodes)
     )
     for node in horizontal_skeleton_nodes:
         simple_node1_code = simple_node2alphaneumeric[node[0]]
         simple_node2_code = simple_node2alphaneumeric[node[1]]
         subnode_code = horizontal_node_subplot2letter[node[2]]
-        bridge_node2label[node] = simple_node1_code + "-" + simple_node2_code + "_" + subnode_code
+        bridge_node2label[node] = (
+            simple_node1_code + "-" + simple_node2_code + "_" + subnode_code
+        )
     for node in vertical_skeleton_nodes:
         simple_node1_code = simple_node2alphaneumeric[node[0]]
         simple_node2_code = simple_node2alphaneumeric[node[1]]
         subnode_code = vertical_node_subplot2letter[node[2]]
-        bridge_node2label[node] = simple_node1_code + "-" + simple_node2_code + "_" + subnode_code
+        bridge_node2label[node] = (
+            simple_node1_code + "-" + simple_node2_code + "_" + subnode_code
+        )
     return bridge_node2label
 
 
 def get_skeleton_maze_node_labels_dict():
     """Makes a dictionary of the labels of the nodes in the skeleton maze."""
-    return {**_get_skeleton_maze_tower_labels_dict(), **_get_skeleton_maze_bridge_labels_dict()}
+    return {
+        **_get_skeleton_maze_tower_labels_dict(),
+        **_get_skeleton_maze_bridge_labels_dict(),
+    }
 
 
 # %%
